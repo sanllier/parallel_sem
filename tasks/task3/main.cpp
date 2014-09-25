@@ -45,18 +45,18 @@ int main( int argc, char** argv )
     SHeader bLineHeader;
     matrix< MATRIX_TYPE > bLine = deserializeLine< MATRIX_TYPE >( matBFile, myID, procNum, &bSrcMatHeader, &bLineHeader );
 
-    if ( aLine.width() != bLine.height() )
+    if ( aSrcMatHeader.width != bSrcMatHeader.height )
         throw "Invalid matrices dimensions( non equal )";
 
     //----------------------------------------------------
  
     int blockWidth = bLine.width() / procNum;
-    matrix< MATRIX_TYPE > bTranspLine( aSrcMatHeader.height, aLine.height() );
+    matrix< MATRIX_TYPE > bTranspLine( aSrcMatHeader.height, blockWidth );
     matrix< MATRIX_TYPE > resBlock( aLine.height(), blockWidth );
-    matrix< MATRIX_TYPE > result( aLine.width(), aLine.height() );
+    matrix< MATRIX_TYPE > result( aLine.height(), bSrcMatHeader.width );
 
     MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLine.height(), blockWidth, aLine.dataWidth(), MPI_TYPE );
-    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLine.height(), blockWidth, blockWidth, MPI_TYPE );
+    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLine.height(), blockWidth, bTranspLine.dataWidth(), MPI_TYPE );
 
     double start = MPI_Wtime();
 
@@ -68,7 +68,7 @@ int main( int argc, char** argv )
             {
                 matrix< MATRIX_TYPE > myBlock = getBlock( aLine, procNum, iter );
                 MPI_Bcast( myBlock.shiftedRaw(), 1, SEND_MATRIX_BLOCK, i, MPI_COMM_WORLD );
-                bTranspLine.insertSubmatrix( myBlock, myID * aLine.height(), 0 );
+                bTranspLine.insertSubmatrix( myBlock, myID * myBlock.height(), 0 );
             }
             else
             {            
@@ -86,8 +86,9 @@ int main( int argc, char** argv )
 
     //-----------------------------------------------------
 
-    SHeader resHeader = { aLine.height(), bLine.width(), aLine.dataType(), aLine.matrixType() };
-    const bool serializationRes = parallelMatrixSerialization( resHeader, aLineHeader, result, resFile );
+    SHeader fullResHeader = { aSrcMatHeader.height, bSrcMatHeader.width, aLine.dataType(), aLine.matrixType() };
+    SHeader partResHeader = { aLine.height(), bSrcMatHeader.width, aLine.dataType(), aLine.matrixType() };
+    const bool serializationRes = parallelMatrixSerialization( fullResHeader, partResHeader, result, resFile );
     if ( !serializationRes )
         throw "Error while matrix serialization";
 
