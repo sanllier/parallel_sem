@@ -15,6 +15,26 @@
 
 #define MASTERPRINT( _x_ ) if ( myID == ROOT_ID ) std::cout << _x_ ; std::cout.flush()
 
+#define RESOLVE_OP( _header_, _mat_, _op_ )     \
+    if ( _header_.dataType == INT )             \
+        ( (matrix<int>*)_mat_ )->_op_;          \
+    else if ( _header_.dataType == LONG )       \
+        ( (matrix<long>*)_mat_ )->_op_;         \
+    else if ( _header_.dataType == FLOAT )      \
+        ( (matrix<float>*)_mat_ )->_op_;        \
+    else if ( _header_.dataType == DOUBLE )     \
+        ( (matrix<double>*)_mat_ )->_op_;       \
+
+#define RESOLVE_VAR( _header_, _mat_, _op_, _var_ ) \
+    if ( _header_.dataType == INT )                 \
+        _var_ = ( (matrix<int>*)_mat_ )->_op_;      \
+    else if ( _header_.dataType == LONG )           \
+        _var_ = ( (matrix<long>*)_mat_ )->_op_;     \
+    else if ( _header_.dataType == FLOAT )          \
+        _var_ = ( (matrix<float>*)_mat_ )->_op_;    \
+    else if ( _header_.dataType == DOUBLE )         \
+        _var_ = ( (matrix<double>*)_mat_ )->_op_;   \
+
 //----------------------------------------------------------
 
 enum
@@ -34,6 +54,14 @@ inline void checkres( int res )
         throw res;
 }
 
+inline MPI_Datatype MPI_Type_vector_wrapper( int count, int blocklength, int stride, MPI_Datatype oldtype )
+{
+    MPI_Datatype temp;
+    checkres( MPI_Type_vector( count, blocklength, stride, oldtype, &temp ) );
+    checkres( MPI_Type_commit( &temp ) );
+    return temp;
+}
+
 inline size_t fileSize( std::ifstream& iFstr )
 {
     if ( !iFstr.good() )
@@ -47,6 +75,50 @@ inline size_t fileSize( std::ifstream& iFstr )
     return size;
 }
 
+template< class T >
+bool parallelMatrixSerialization( const Matrix::SHeader& fullHeader, const Matrix::SHeader& partHeader, const Matrix::matrix<T>& mat, const char* fileName )
+{
+    if ( !fileName || !fileName[0] )
+        return false;
+
+    int procNum = 0;
+    int myID = 0;
+    checkres( MPI_Comm_size( MPI_COMM_WORLD, &procNum ) );
+    checkres( MPI_Comm_rank( MPI_COMM_WORLD, &myID ) );
+
+    for ( int i = 0; i < procNum; ++i )
+    {
+        if ( myID == i )
+        {
+            if ( myID == ROOT_ID )
+            {
+                std::ofstream res( fileName, std::ios::binary );
+                if ( !res.good() )
+                    return false;
+
+                res.write( (const char*)&fullHeader, sizeof( Matrix::SHeader ) );
+                const char* raw = (char*)mat.raw();
+                res.write( raw, ELEMENT_SIZE_BY_TYPE[ partHeader.dataType ] * mat.height() * mat.width() );
+                res.close();
+            }
+            else
+            {
+                std::fstream res;
+                res.open ( fileName, std::fstream::out | std::fstream::app | std::ios::binary );
+                if ( !res.good() )
+                    return false;
+
+                const char* raw = (char*)mat.raw();
+                res.write( raw, ELEMENT_SIZE_BY_TYPE[ partHeader.dataType ] * mat.height() * mat.width() );
+                res.close();
+            }
+        }
+        MPI_Barrier( MPI_COMM_WORLD );
+    }
+
+    return true;
+};
+
 //----------------------------------------------------------
 
 template< class T >
@@ -58,13 +130,15 @@ inline Matrix::matrix<T> getBlock( Matrix::matrix<T>& mat, int procNum, int bloc
     return subMat;
 }
 
-void* deserializeLine( const char* fileName, int lineNum, int totalLines, Matrix::SHeader* fullHeader )
+template< class T >
+Matrix::matrix<T> deserializeLine( const char* fileName, int lineNum, int totalLines, Matrix::SHeader* fullHeader, Matrix::SHeader* lineHeader )
 {
     std::ifstream file( fileName, std::ios::binary );
     if ( !file.good() )
     {
         *fullHeader = Matrix::SHeader();
-        return 0;
+        *lineHeader = Matrix::SHeader();
+        return Matrix::matrix<T>();
     }
 
     matrix_serialization serializer;
@@ -81,14 +155,14 @@ void* deserializeLine( const char* fileName, int lineNum, int totalLines, Matrix
     file.seekg( myShift );
     size = header.height * header.width * ELEMENT_SIZE_BY_TYPE[ header.dataType ];
 
-    void* line = matrix_serialization::newMatrixByType( header );
+    *lineHeader = header;
+
+    Matrix::matrix<T> line( header.height, header.width );
     while ( size > 0 )
     {
         size_t readSize = size < BUF_SIZE ? size : BUF_SIZE;
         file.read( buffer, readSize );
-        if ( !matrix_serialization::deserializeStepByType( serializer, header, buffer, readSize, line ) )
-            throw "Error while reading the line";
-
+        serializer.deserializeStep<T>( buffer, readSize, line );
         size -= readSize;        
     }
     serializer.deserializeStop();
@@ -96,7 +170,6 @@ void* deserializeLine( const char* fileName, int lineNum, int totalLines, Matrix
 
     return line;
 }
-
 
 //----------------------------------------------------------
 

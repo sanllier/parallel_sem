@@ -83,6 +83,27 @@ public:
         return temp;
     }
 
+    static bool rmul( matrix<T>& res, const matrix<T>& matA, const matrix<T>& matB )
+    {
+        if ( matA.width() != matB.height() || matA.height() != res.height() || matB.width() != res.width() )
+            return false;
+
+        T acc = T();
+        for ( long i = 0; i < matA.height(); ++i )
+        {
+            
+            for ( long q = 0; q < matB.width(); ++q )
+            {
+                for ( long k = 0; k < matA.width(); ++k )
+                    acc += matA.at( i, k ) * matB.at( k, q );
+ 
+                res.at( i, q ) = acc;
+                acc = T();
+            }
+        }
+        return true;
+    }
+
     static matrix<T>* mulx( const matrix<T>& matA, const matrix<T>& matB, T frac )
     {
         if ( matA.width() != matB.height() )

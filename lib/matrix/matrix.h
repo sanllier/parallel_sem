@@ -153,7 +153,9 @@ public:
     inline void setMatrixType( EMatrixType type ) { m_matrixType = type; }
     inline EMatrixType matrixType() const { return m_matrixType; }
     inline void* raw() { return m_data.get(); }
+    inline const void* raw() const { return m_data.get(); }
     inline void* shiftedRaw() { return m_data.get() + m_info.pivotRow * dataWidth() + m_info.pivotCol; } 
+    inline const void* shiftedRaw() const { return m_data.get() + m_info.pivotRow * dataWidth() + m_info.pivotCol; } 
 
     //-----------------------------------------------------
     matrix<T>& strongSubmatrix( const matrix<T>& mat, long row, long col, long height, long width )
@@ -176,6 +178,17 @@ public:
         m_dataWidth  = mat.m_dataWidth;
         m_matrixType = mat.m_matrixType;
         m_data = mat.m_data;
+        return *this;
+    }
+    matrix<T>& insertSubmatrix( const matrix<T>& mat, long row, long col )
+    {
+        const long insH = row + mat.height() > this->height() ? mat.height() - row : row + mat.height();
+        const long insW = col + mat.width()  > this->width() ? mat.width() - col : col + mat.width();
+
+        for ( long i = row; i < insH; ++i )
+            for ( long q = col; q < insW; ++q )
+                this->at( i, q ) = mat.at( i - row, q - col );
+
         return *this;
     }
     void clear()
