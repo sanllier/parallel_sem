@@ -51,12 +51,12 @@ int main( int argc, char** argv )
     //----------------------------------------------------
  
     int blockWidth = bLine.width() / procNum;
-    matrix< MATRIX_TYPE > bTranspLine( aSrcMatHeader.height, blockWidth );
-    matrix< MATRIX_TYPE > resBlock( aLine.height(), blockWidth );
-    matrix< MATRIX_TYPE > result( aLine.height(), bSrcMatHeader.width );
+    matrix< MATRIX_TYPE > bTranspLine( bSrcMatHeader.height, blockWidth );
+    matrix< MATRIX_TYPE > resBlock( aLine.height(), bTranspLine.width() );
+    matrix< MATRIX_TYPE > result( resBlock.height(), resBlock.width() * procNum );
 
-    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLine.height(), blockWidth, aLine.dataWidth(), MPI_TYPE );
-    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLine.height(), blockWidth, bTranspLine.dataWidth(), MPI_TYPE );
+    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( bLine.height(), blockWidth, bLine.dataWidth(), MPI_TYPE );
+    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( bLine.height(), blockWidth, bTranspLine.dataWidth(), MPI_TYPE );
 
     double start = MPI_Wtime();
 
@@ -66,7 +66,7 @@ int main( int argc, char** argv )
         {
             if ( i == myID )
             {
-                matrix< MATRIX_TYPE > myBlock = getBlock( aLine, procNum, iter );
+                matrix< MATRIX_TYPE > myBlock = getBlock( bLine, procNum, iter );
                 MPI_Bcast( myBlock.shiftedRaw(), 1, SEND_MATRIX_BLOCK, i, MPI_COMM_WORLD );
                 bTranspLine.insertSubmatrix( myBlock, myID * myBlock.height(), 0 );
             }
@@ -77,8 +77,10 @@ int main( int argc, char** argv )
             }
         }
 
-        matrix_helper< MATRIX_TYPE >::rmul( resBlock, aLine, bTranspLine );
-        result.insertSubmatrix( resBlock, 0, iter * blockWidth );
+        matrix< MATRIX_TYPE >* resBlock = matrix_helper< MATRIX_TYPE >::mul( aLine, bTranspLine );
+        //matrix_helper< MATRIX_TYPE >::rmul( resBlock, aLine, bTranspLine );
+        result.insertSubmatrix( *resBlock, 0, iter * blockWidth );
+        delete resBlock;
     }
 
     double end = MPI_Wtime();
@@ -87,7 +89,7 @@ int main( int argc, char** argv )
     //-----------------------------------------------------
 
     SHeader fullResHeader = { aSrcMatHeader.height, bSrcMatHeader.width, aLine.dataType(), aLine.matrixType() };
-    SHeader partResHeader = { aLine.height(), bSrcMatHeader.width, aLine.dataType(), aLine.matrixType() };
+    SHeader partResHeader = { result.height(), result.width(), aLine.dataType(), aLine.matrixType() };
     const bool serializationRes = parallelMatrixSerialization( fullResHeader, partResHeader, result, resFile );
     if ( !serializationRes )
         throw "Error while matrix serialization";
