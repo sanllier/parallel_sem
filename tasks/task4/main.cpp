@@ -48,13 +48,13 @@ int main( int argc, char** argv )
        
     //-----------------------------------------------------
 
-    int blockSize = srcMatHeader.width / procNum;
-    matrix< MATRIX_TYPE > bTranspLine( aLine.width(), aLine.height() );
-    matrix< MATRIX_TYPE > result( aLine.height(), aLine.width() );
-    matrix< MATRIX_TYPE > resBlock( blockSize, blockSize );
+    int blockSize = aLineBackup.width() / procNum;
+    matrix< MATRIX_TYPE > bTranspLine( srcMatHeader.height, blockSize );
+    matrix< MATRIX_TYPE > resBlock( aLine.height(), bTranspLine.width() );
+    matrix< MATRIX_TYPE > result( resBlock.height(), resBlock.width() * procNum );
 
-    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( blockSize, blockSize, aLine.dataWidth(), MPI_TYPE );
-    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( blockSize, blockSize, bTranspLine.dataWidth(), MPI_TYPE );
+    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLineBackup.height(), blockSize, aLineBackup.dataWidth(), MPI_TYPE );
+    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLineBackup.height(), blockSize, bTranspLine.dataWidth(), MPI_TYPE );
 
     double start = MPI_Wtime();
 
@@ -71,8 +71,8 @@ int main( int argc, char** argv )
                     bTranspLine.insertSubmatrix( myBlock, myID * blockSize, 0 );
                 }
                 else
-                {            
-                    char* dataPos = (char *)bTranspLine.raw() + i * blockSize * blockSize * ELEMENT_SIZE_BY_TYPE[ bTranspLine.dataType() ];
+                {        
+                    char* dataPos = (char *)bTranspLine.raw() + i * aLine.height() * blockSize * ELEMENT_SIZE_BY_TYPE[ bTranspLine.dataType() ];
                     MPI_Bcast( dataPos, 1, RECV_MATRIX_BLOCK, i, MPI_COMM_WORLD );   
                 }
             }
@@ -80,7 +80,7 @@ int main( int argc, char** argv )
             matrix_helper< MATRIX_TYPE >::rmul( resBlock, aLine, bTranspLine );
             result.insertSubmatrix( resBlock, 0, iter * blockSize );
         }
-        aLine = result;
+        aLine.equalStrongCopy( result );
     }
 
     double end = MPI_Wtime();

@@ -114,6 +114,16 @@ public:
         matrix<T> temp( mat );
         this->weakCopy( temp );
 	}
+    void equalStrongCopy( const matrix& mat )
+    {
+        if ( this->height() != mat.height() || this->width() != mat.width() )
+            throw "equalStrongCopy error";
+
+        // CRAP
+        for ( long i = 0; i < mat.height(); ++i )
+            for ( long q = 0; q < mat.width(); ++q )
+            this->at( i, q ) = mat.at( i, q );
+    }
 	matrix& operator=( const matrix& mat )
 	{
 		weakCopy( mat );
