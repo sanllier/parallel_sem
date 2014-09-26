@@ -66,7 +66,7 @@ int main( int argc, char** argv )
             {
                 if ( i == myID )
                 {
-                    matrix< MATRIX_TYPE > myBlock = getBlock( aLine, procNum, iter ); 
+                    matrix< MATRIX_TYPE > myBlock = getBlock( aLineBackup, procNum, iter ); 
                     MPI_Bcast( myBlock.shiftedRaw(), 1, SEND_MATRIX_BLOCK, i, MPI_COMM_WORLD );
                     bTranspLine.insertSubmatrix( myBlock, myID * blockSize, 0 );
                 }
