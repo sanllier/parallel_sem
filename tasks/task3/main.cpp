@@ -77,10 +77,8 @@ int main( int argc, char** argv )
             }
         }
 
-        matrix< MATRIX_TYPE >* resBlock = matrix_helper< MATRIX_TYPE >::mul( aLine, bTranspLine );
-        //matrix_helper< MATRIX_TYPE >::rmul( resBlock, aLine, bTranspLine );
-        result.insertSubmatrix( *resBlock, 0, iter * blockWidth );
-        delete resBlock;
+        matrix_helper< MATRIX_TYPE >::rmul( resBlock, aLine, bTranspLine );
+        result.insertSubmatrix( resBlock, 0, iter * blockWidth );
     }
 
     double end = MPI_Wtime();
