@@ -88,13 +88,14 @@ int main( int argc, char** argv )
     matrix< MATRIX_TYPE > bTranspLine( srcMatHeader.height, blockSize );
     matrix< MATRIX_TYPE > resBlock( aLine.height(), bTranspLine.width() );
     matrix< MATRIX_TYPE > result( resBlock.height(), resBlock.width() * procNum );
+    matrix< MATRIX_TYPE >* workLine = &aLineBackup;
 
-    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLineBackup.height(), blockSize, aLineBackup.dataWidth(), MPI_TYPE );
-    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( aLineBackup.height(), blockSize, bTranspLine.dataWidth(), MPI_TYPE );
+    MPI_Datatype SEND_MATRIX_BLOCK = MPI_Type_vector_wrapper( workLine->height(), blockSize, workLine->dataWidth(), MPI_TYPE );
+    MPI_Datatype RECV_MATRIX_BLOCK = MPI_Type_vector_wrapper( workLine->height(), blockSize, bTranspLine.dataWidth(), MPI_TYPE );
 
     double start = MPI_Wtime();
 
-    for ( int _ = 1; _ < power; ++_  )
+    for ( int curPow = 1; curPow < power; ++curPow  )
     {
         for ( int iter = 0; iter < procNum; ++iter )
         {
@@ -102,7 +103,7 @@ int main( int argc, char** argv )
             {
                 if ( i == myID )
                 {
-                    matrix< MATRIX_TYPE > myBlock = getBlock( aLineBackup, procNum, iter ); 
+                    matrix< MATRIX_TYPE > myBlock = getBlock( *workLine, procNum, iter ); 
                     MPI_Bcast( myBlock.shiftedRaw(), 1, SEND_MATRIX_BLOCK, i, MPI_COMM_WORLD );
                     bTranspLine.insertSubmatrix( myBlock, myID * blockSize, 0 );
                 }
@@ -117,6 +118,16 @@ int main( int argc, char** argv )
             result.insertSubmatrix( resBlock, 0, iter * blockSize );
         }
         aLine.equalStrongCopy( result );
+
+        if ( power / ( curPow + 1 ) >= 2 )
+        {
+            workLine = &aLine;
+            curPow = ( ( curPow + 1 ) << 1 ) - 2;
+        }
+        else
+        {
+            workLine = &aLineBackup;
+        }
     }
 
     double end = MPI_Wtime();
