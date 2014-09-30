@@ -18,6 +18,36 @@ using namespace Matrix;
 
 //----------------------------------------------------------
 
+void checkRoutine( parparser& arguments )
+{
+    int power = arguments.get("n").asInt(1);    
+    const char* matFile = arguments.get("f").value;
+    const char* resFile = arguments.get("res").value;
+    if ( !matFile || !matFile[0] || !resFile || !resFile[0] )
+        throw "Invalid file name";
+
+    //----------------------------------------------------
+
+    SHeader header;
+    matrix_serialization serializer;
+    matrix< MATRIX_TYPE >* workMatrix = ( matrix< MATRIX_TYPE >* )serializer.readBinary( matFile, header );
+    matrix< MATRIX_TYPE > backUp( *workMatrix ); 
+
+    for ( int i = 1; i < power; ++i )
+        workMatrix->mul( backUp );
+
+    serializer.writeBinary( resFile, *workMatrix );
+
+    delete workMatrix;
+    workMatrix = 0;
+
+    //----------------------------------------------------
+
+    exit(0);
+}
+
+//----------------------------------------------------------
+
 int main( int argc, char** argv )
 {
     checkres( MPI_Init( &argc, &argv ) );
@@ -30,7 +60,13 @@ int main( int argc, char** argv )
     //-----------------------------------------------------
 
     parparser arguments( argc, argv ); 
-    int power = arguments.get("n").asInt(1);
+    if ( arguments.get("check").asBool( false ) )
+    {
+        checkres( MPI_Finalize() );
+        checkRoutine( arguments );
+    }
+
+    int power = arguments.get("n").asInt(1);    
     const char* matFile = arguments.get("f").value;
     const char* resFile = arguments.get("res").value;
     if ( !matFile || !matFile[0] || !resFile || !resFile[0] )
