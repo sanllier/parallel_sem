@@ -10,6 +10,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "matrix", "..\matrix\matrix.vcxproj", "{CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parparser", "..\parparser\parparser.vcxproj", "{35F9F4C7-848A-4765-BD98-90A19763AA8B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F} = {33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task2", "..\task2\task2.vcxproj", "{C7C592BD-60B2-405F-B2C1-9D23B07ECE7F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -38,6 +41,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task4", "..\task4\task4.vcx
 		{CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771} = {CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771}
 		{35F9F4C7-848A-4765-BD98-90A19763AA8B} = {35F9F4C7-848A-4765-BD98-90A19763AA8B}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task5", "..\task5\task5.vcxproj", "{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +82,10 @@ Global
 		{1AEB26DD-A2A0-40B3-B32C-4FA04732151E}.Debug|Win32.Build.0 = Debug|Win32
 		{1AEB26DD-A2A0-40B3-B32C-4FA04732151E}.Release|Win32.ActiveCfg = Release|Win32
 		{1AEB26DD-A2A0-40B3-B32C-4FA04732151E}.Release|Win32.Build.0 = Release|Win32
+		{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}.Debug|Win32.Build.0 = Debug|Win32
+		{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}.Release|Win32.ActiveCfg = Release|Win32
+		{33D8DC27-CCC1-4177-BBEC-EA269A12FB2F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

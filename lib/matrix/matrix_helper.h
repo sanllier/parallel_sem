@@ -90,8 +90,7 @@ public:
 
         T acc = T();
         for ( long i = 0; i < matA.height(); ++i )
-        {
-            
+        {            
             for ( long q = 0; q < matB.width(); ++q )
             {
                 for ( long k = 0; k < matA.width(); ++k )
@@ -136,6 +135,27 @@ public:
                 temp->at( i, q ) = matA.at( i, q ) * frac;
 
         return temp;
+    }
+
+    static bool mulsum( matrix<T>& res, const matrix<T>& matA, const matrix<T>& matB )
+    {
+        if ( matA.width() != matB.height() || matA.height() != res.height() || matB.width() != res.width() )
+            return false;
+
+        for ( long i = 0; i < matA.height(); ++i )
+        {
+            
+            for ( long q = 0; q < matB.width(); ++q )
+            {
+                T acc = res.at( i, q );
+                for ( long k = 0; k < matA.width(); ++k )
+                    acc += matA.at( i, k ) * matB.at( k, q );
+ 
+                res.at( i, q ) = acc;
+                acc = T();
+            }
+        }
+        return true;
     }
 
     static matrix<T>* sum( const matrix<T>& matA, const matrix<T>& matB )
