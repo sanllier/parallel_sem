@@ -123,8 +123,8 @@ int main( int argc, char** argv )
     //-----------------------------------------------------
 
     int remainDims[2] = { 1, 0 };
-    MPI_Comm* outputComms = new MPI_Comm[ sqrtProcNum ];
-    MPI_Cart_sub( gridComm, remainDims, outputComms );
+    MPI_Comm outputComm;
+    MPI_Cart_sub( gridComm, remainDims, &outputComm );
 
     MPI_Datatype SR_RESBLOCK = MPI_Type_vector_wrapper( resBlock.height(), resBlock.width(), resBlock.dataWidth(), MPI_TYPE );
     if ( coords[1] == 0 )
@@ -170,7 +170,7 @@ int main( int argc, char** argv )
                     res.close();
                 }
             }
-            MPI_Barrier( outputComms[0] );
+            MPI_Barrier( outputComm );
         }       
     }
     else
@@ -180,9 +180,6 @@ int main( int argc, char** argv )
         checkres( MPI_Cart_rank( gridComm, dstCoords, &dstRank ) );
         checkres( MPI_Send( resBlock.raw(), 1, SR_RESBLOCK, dstRank, SR_TAG, gridComm ) );
     }
-
-    delete outputComms;
-    outputComms = 0;
 
     const double end = MPI_Wtime();
     MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
