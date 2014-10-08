@@ -76,15 +76,15 @@ inline size_t fileSize( std::ifstream& iFstr )
 }
 
 template< class T >
-bool parallelMatrixSerialization( const Matrix::SHeader& fullHeader, const Matrix::SHeader& partHeader, const Matrix::matrix<T>& mat, const char* fileName )
+bool parallelMatrixSerialization( const Matrix::SHeader& fullHeader, const Matrix::SHeader& partHeader, const Matrix::matrix<T>& mat, const char* fileName, MPI_Comm comm )
 {
     if ( !fileName || !fileName[0] )
         return false;
 
     int procNum = 0;
     int myID = 0;
-    checkres( MPI_Comm_size( MPI_COMM_WORLD, &procNum ) );
-    checkres( MPI_Comm_rank( MPI_COMM_WORLD, &myID ) );
+    checkres( MPI_Comm_size( comm, &procNum ) );
+    checkres( MPI_Comm_rank( comm, &myID ) );
 
     for ( int i = 0; i < procNum; ++i )
     {
@@ -113,7 +113,7 @@ bool parallelMatrixSerialization( const Matrix::SHeader& fullHeader, const Matri
                 res.close();
             }
         }
-        MPI_Barrier( MPI_COMM_WORLD );
+        MPI_Barrier( comm );
     }
 
     return true;

@@ -34,7 +34,7 @@ int main( int argc, char** argv )
     serializer.writeBinary( resFile, matA );
 
     clock_t end = clock();
-    std::cout << "TOTAL TIME: " << end - start << "\r\n";
+    std::cout << "TOTAL TIME: " << double( end - start ) / CLOCKS_PER_SEC << "\r\n";
 
     return 0;
 }

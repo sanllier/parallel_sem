@@ -84,12 +84,14 @@ int main( int argc, char** argv )
 
     //-----------------------------------------------------
 
+    const double start = MPI_Wtime();
+
     int leftRank = 0;
     int rightRank = 0;
     int downRank = 0;
     int upRank = 0;
-    MPI_Cart_shift( gridComm, 1, -1, &rightRank, &leftRank );
-    MPI_Cart_shift( gridComm, 0, -1, &downRank, &upRank );
+    checkres( MPI_Cart_shift( gridComm, 1, -1, &rightRank, &leftRank ) );
+    checkres( MPI_Cart_shift( gridComm, 0, -1, &downRank, &upRank ) );
 
     MPI_Datatype SR_ABLOCK = MPI_Type_vector_wrapper( aBlock.height(), aBlock.width(), aBlock.dataWidth(), MPI_TYPE );
     MPI_Datatype SR_BBLOCK = MPI_Type_vector_wrapper( bBlock.height(), bBlock.width(), bBlock.dataWidth(), MPI_TYPE );
@@ -98,60 +100,93 @@ int main( int argc, char** argv )
     int shiftDst = 0;
     MPI_Status status;
 
-    MPI_Cart_shift( gridComm, 1, -coords[0], &shiftSrc, &shiftDst );
-    MPI_Sendrecv_replace( aBlock.shiftedRaw(), 1, SR_ABLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status );
+    checkres( MPI_Cart_shift( gridComm, 1, -coords[0], &shiftSrc, &shiftDst ) );
+    checkres( MPI_Sendrecv_replace( aBlock.shiftedRaw(), 1, SR_ABLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status ) );
 
-    MPI_Cart_shift( gridComm, 0, -coords[1], &shiftSrc, &shiftDst );
-    MPI_Sendrecv_replace( bBlock.shiftedRaw(), 1, SR_BBLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status );
+    checkres( MPI_Cart_shift( gridComm, 0, -coords[1], &shiftSrc, &shiftDst ) );
+    checkres( MPI_Sendrecv_replace( bBlock.shiftedRaw(), 1, SR_BBLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status ) );
 
     matrix< MATRIX_TYPE > resBlock( aBlock.height(), bBlock.width() );
     for ( int i = 0; i < dims[0]; ++i )
     {
         matrix_helper< MATRIX_TYPE >::mulsum( resBlock, aBlock, bBlock );
-        MPI_Sendrecv_replace( aBlock.raw(), 1, SR_ABLOCK, leftRank, SR_TAG, rightRank, SR_TAG, gridComm, &status );
-        MPI_Sendrecv_replace( bBlock.raw(), 1, SR_BBLOCK, upRank, SR_TAG, downRank, SR_TAG, gridComm, &status );
+        checkres( MPI_Sendrecv_replace( aBlock.raw(), 1, SR_ABLOCK, leftRank, SR_TAG, rightRank, SR_TAG, gridComm, &status ) );
+        checkres( MPI_Sendrecv_replace( bBlock.raw(), 1, SR_BBLOCK, upRank, SR_TAG, downRank, SR_TAG, gridComm, &status ) );
     }
 
-    MPI_Cart_shift( gridComm, 1, coords[0], &shiftSrc, &shiftDst );
-    MPI_Sendrecv_replace( aBlock.raw(), 1, SR_ABLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status );
+    checkres( MPI_Cart_shift( gridComm, 1, coords[0], &shiftSrc, &shiftDst ) );
+    checkres( MPI_Sendrecv_replace( aBlock.raw(), 1, SR_ABLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status ) );
 
-    MPI_Cart_shift( gridComm, 0, coords[1], &shiftSrc, &shiftDst );
-    MPI_Sendrecv_replace( bBlock.raw(), 1, SR_BBLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status );
+    checkres( MPI_Cart_shift( gridComm, 0, coords[1], &shiftSrc, &shiftDst ) );
+    checkres( MPI_Sendrecv_replace( bBlock.raw(), 1, SR_BBLOCK, shiftDst, SR_TAG, shiftSrc, SR_TAG, gridComm, &status ) );
 
     //-----------------------------------------------------
 
-    MPI_Datatype SR_RESBLOCK = MPI_Type_vector_wrapper( resBlock.height(), resBlock.width(), resBlock.dataWidth(), MPI_TYPE );
-    matrix< MATRIX_TYPE > resLine( resBlock.height(), resBlock.width() * sqrtProcNum );
-    resLine.insertSubmatrix( resBlock, 0, myGridID * resBlock.width() );
+    int remainDims[2] = { 1, 0 };
+    MPI_Comm* outputComms = new MPI_Comm[ sqrtProcNum ];
+    MPI_Cart_sub( gridComm, remainDims, outputComms );
 
+    MPI_Datatype SR_RESBLOCK = MPI_Type_vector_wrapper( resBlock.height(), resBlock.width(), resBlock.dataWidth(), MPI_TYPE );
     if ( coords[1] == 0 )
-    {
+    {        
+        matrix< MATRIX_TYPE > resLine( resBlock.height(), resBlock.width() * sqrtProcNum );
+        resLine.insertSubmatrix( resBlock, 0, 0 );
+
+        int srcCoords[2] = { 0, 0 };
         for ( int i = 1; i < sqrtProcNum; ++i ) 
         {
-            MPI_Recv( resBlock.raw(), 1, SR_RESBLOCK, MPI_ANY_SOURCE, SR_TAG, gridComm, &status );
-            int srcCoords[2];
-            MPI_Cart_coords( gridComm, status.MPI_SOURCE, 2, coords );
+            checkres( MPI_Recv( resBlock.raw(), 1, SR_RESBLOCK, MPI_ANY_SOURCE, SR_TAG, gridComm, &status ) );
+            checkres( MPI_Cart_coords( gridComm, status.MPI_SOURCE, 2, srcCoords ) );
             resLine.insertSubmatrix( resBlock, 0, srcCoords[1] * resBlock.width() );
         }
+
+        // CRAP
+        SHeader fullHeader = { resLine.height() * sqrtProcNum, resLine.width(), resLine.dataType(), resLine.matrixType() };
+        SHeader lineHeader = { resLine.height(), resLine.width(), resLine.dataType(), resLine.matrixType() };
+                  
+        for ( int i = 0; i < procNum; ++i )
+        {
+            if ( i == myID )
+            {
+                if ( coords[0] == 0 )
+                {
+                    std::ofstream res( resFile, std::fstream::out | std::ios::binary );
+                    if ( !res.good() )
+                        return false;
+
+                    res.write( (const char*)&fullHeader, sizeof( Matrix::SHeader ) );
+                    const char* raw = (char*)resLine.raw();
+                    res.write( raw, ELEMENT_SIZE_BY_TYPE[ lineHeader.dataType ] * resLine.height() * resLine.width() );
+                    res.close();
+                }
+                else
+                {
+                    std::fstream res( resFile, std::fstream::out | std::fstream::app | std::ios::binary );
+                    if ( !res.good() )
+                        return false;
+
+                    const char* raw = (char*)resLine.raw();
+                    res.write( raw, ELEMENT_SIZE_BY_TYPE[ lineHeader.dataType ] * resLine.height() * resLine.width() );
+                    res.close();
+                }
+            }
+            MPI_Barrier( outputComms[0] );
+        }       
     }
     else
     {
         int dstRank = 0;
         int dstCoords[2] = { coords[0], 0 };
-        MPI_Cart_rank( gridComm, dstCoords, &dstRank );
-        MPI_Send( resBlock.raw(), 1, SR_RESBLOCK, dstRank, SR_TAG, gridComm );
+        checkres( MPI_Cart_rank( gridComm, dstCoords, &dstRank ) );
+        checkres( MPI_Send( resBlock.raw(), 1, SR_RESBLOCK, dstRank, SR_TAG, gridComm ) );
     }
 
-    //-----------------------------------------------------
+    delete outputComms;
+    outputComms = 0;
 
-    if ( coords[1] == 0 )
-    {
-        SHeader fullHeader = { resLine.height() * sqrtProcNum, resLine.width(), resLine.dataType(), resLine.matrixType() };
-        SHeader lineHeader = { resLine.height(), resLine.width(), resLine.dataType(), resLine.matrixType() };
-        const bool serializationRes = parallelMatrixSerialization( fullHeader, lineHeader, resLine, resFile );
-        if ( !serializationRes )
-            throw "Error while matrix serialization";
-    }
+    const double end = MPI_Wtime();
+    MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
+
     //-----------------------------------------------------
 
     checkres( MPI_Finalize() );
