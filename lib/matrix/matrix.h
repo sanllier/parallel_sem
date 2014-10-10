@@ -217,7 +217,7 @@ public:
 
         for ( long i = 0; i < height; ++i )
             for ( long q = 0; q < width; ++q )
-                at( i + m_info.pivotRow, q + m_info.pivotCol ) += matr.at( i + matr.m_info.pivotRow, q + matr.m_info.pivotCol );
+                at( i, q ) += matr.at( i, q );
 
         return *this;
     }
