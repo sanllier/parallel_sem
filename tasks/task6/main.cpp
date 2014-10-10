@@ -160,15 +160,65 @@ int main( int argc, char** argv )
         checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, cDepthComm ) );
     }
 
-    //if ( myID == 0 )
-    if ( cubeCoords[1] == 0 )
-        matrix_helper< MATRIX_TYPE >::print( *resBlock, std::cout );
-
     delete resBlock;
     resBlock = 0;
 
     const double end = MPI_Wtime();
     MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
+
+    //-----------------------------------------------------
+
+    if ( cubeCoords[1] == 0 && cubeCoords[2] == 0 )
+    {
+        matrix< MATRIX_TYPE > resLine( resBlock->height(), resBlock->width() * zDim );
+        resLine.insertSubmatrix( *resBlock, 0, 0 );
+
+        //MPI_Status status;
+        //for ( int i = 1; i < zDim; ++i )
+        //{
+        //    checkres( MPI_Recv( resBlock->raw(), 1, RESBLOCK, MPI_ANY_SOURCE, MPI_ANY_TAG, aDepthComm, &status ) );
+        //    resLine.insertSubmatrix( *resBlock, 0, status.MPI_SOURCE * resBlock->width() );
+        //}
+
+        SHeader fullResHeader = { resLine.height() * xDim, resLine.width(), resLine.dataType(), resLine.matrixType() };
+        SHeader lineResHeader = { resLine.height(), resLine.width(), resLine.dataType(), resLine.matrixType() };
+
+        if ( cubeCoords[0] == 0 && cubeCoords[1] == 0 && cubeCoords[2] == 0 )
+        {
+            std::ofstream res( resFile, std::fstream::out | std::ios::binary );
+            if ( !res.good() )
+                return false;
+
+            res.write( (const char*)&fullResHeader, sizeof( Matrix::SHeader ) );
+            const char* raw = (char*)resLine.raw();
+            res.write( raw, ELEMENT_SIZE_BY_TYPE[ lineResHeader.dataType ] * resLine.height() * resLine.width() );
+            res.close();
+        }
+
+        MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+
+        for ( int i = 0; i < xDim; ++i )
+        {
+            if ( cubeCoords[0] == i && cubeCoords[1] == 0 && cubeCoords[2] == 0 )
+            {
+                std::fstream res( resFile, std::fstream::out | std::fstream::app | std::ios::binary );
+                if ( !res.good() )
+                    return false;
+
+                const char* raw = (char*)resLine.raw();
+                res.write( raw, ELEMENT_SIZE_BY_TYPE[ lineResHeader.dataType ] * resLine.height() * resLine.width() );
+                res.close();
+            }
+            MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+        }
+    }
+    else
+    {
+        //checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, aDepthComm ) );
+         MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+         for ( int i = 0; i < xDim; ++i )
+              MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+    }
 
     //-----------------------------------------------------
 
