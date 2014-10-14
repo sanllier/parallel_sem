@@ -160,25 +160,27 @@ int main( int argc, char** argv )
         checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, cDepthComm ) );
     }
 
-    delete resBlock;
-    resBlock = 0;
-
     const double end = MPI_Wtime();
     MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
 
     //-----------------------------------------------------
+
+    if ( cubeCoords[1] == 0 )
+        matrix_helper< MATRIX_TYPE >::print( *resBlock, std::cout );
 
     if ( cubeCoords[1] == 0 && cubeCoords[2] == 0 )
     {
         matrix< MATRIX_TYPE > resLine( resBlock->height(), resBlock->width() * zDim );
         resLine.insertSubmatrix( *resBlock, 0, 0 );
 
-        //MPI_Status status;
-        //for ( int i = 1; i < zDim; ++i )
-        //{
-        //    checkres( MPI_Recv( resBlock->raw(), 1, RESBLOCK, MPI_ANY_SOURCE, MPI_ANY_TAG, aDepthComm, &status ) );
-        //    resLine.insertSubmatrix( *resBlock, 0, status.MPI_SOURCE * resBlock->width() );
-        //}
+        MPI_Status status;
+        for ( int i = 1; i < zDim; ++i )
+        {
+            checkres( MPI_Recv( resBlock->raw(), 1, RESBLOCK, MPI_ANY_SOURCE, MPI_ANY_TAG, cubeComm, &status ) );
+            int coords[3];
+            MPI_Cart_coords( cubeComm, status.MPI_SOURCE, 3, coords );
+            resLine.insertSubmatrix( *resBlock, 0, coords[1] * resBlock->width() );
+        }
 
         SHeader fullResHeader = { resLine.height() * xDim, resLine.width(), resLine.dataType(), resLine.matrixType() };
         SHeader lineResHeader = { resLine.height(), resLine.width(), resLine.dataType(), resLine.matrixType() };
@@ -212,13 +214,25 @@ int main( int argc, char** argv )
             MPI_Barrier( MPI_COMM_WORLD ); // CRAP
         }
     }
+    else if ( cubeCoords[1] == 0 && cubeCoords[2] > 0 )
+    {
+        int coords[3] = { cubeCoords[0], 0, 0 };
+        int target;
+        MPI_Comm_rank( cubeComm, &target );
+        checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, target, 0, cubeComm ) );
+        MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+        for ( int i = 0; i < xDim; ++i )
+            MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+    }
     else
     {
-        //checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, aDepthComm ) );
-         MPI_Barrier( MPI_COMM_WORLD ); // CRAP
-         for ( int i = 0; i < xDim; ++i )
-              MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+        MPI_Barrier( MPI_COMM_WORLD ); // CRAP
+        for ( int i = 0; i < xDim; ++i )
+            MPI_Barrier( MPI_COMM_WORLD ); // CRAP
     }
+
+    delete resBlock;
+    resBlock = 0;
 
     //-----------------------------------------------------
 
