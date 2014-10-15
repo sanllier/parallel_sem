@@ -178,4 +178,76 @@ Matrix::matrix<T> deserializeLine( const char* fileName, int lineNum, int totalL
 
 //----------------------------------------------------------
 
+template< class T, MPI_Datatype MPI_TYPE >
+Matrix::matrix<T> parallelRead( const char* file, int rank, int xDim, int yDim, const int coords[2], MPI_Comm comm, Matrix::SHeader* header )
+{
+    matrix<T> block;
+    if ( !file || !file[0] )
+        return block;
+
+    SHeader tempHeader;
+    if ( rank == ROOT_ID )
+    {
+        std::ifstream inpFile( file, std::ios::binary );
+        if ( !inpFile.good() )
+            return block;
+
+        inpFile.read( (char *)( &tempHeader ), sizeof( tempHeader ) );
+        inpFile.close();
+
+        checkres( MPI_Bcast( &tempHeader, sizeof( tempHeader ), MPI_CHAR, ROOT_ID, MPI_COMM_WORLD ) );
+    }
+    else
+    {
+        checkres( MPI_Bcast( &tempHeader, sizeof( tempHeader ), MPI_CHAR, ROOT_ID, MPI_COMM_WORLD ) );
+    }
+
+    if ( header )
+        *header = tempHeader;
+
+    block = matrix<T>( tempHeader.height / xDim, tempHeader.width / yDim );
+    MPI_Datatype blockType = MPI_Type_vector_wrapper( block.height(), block.width(), tempHeader.width, MPI_TYPE );
+    MPI_File matFile;
+    MPI_Status status;
+    checkres( MPI_File_open( comm, file, MPI_MODE_RDONLY,  MPI_INFO_NULL, &matFile ) );
+
+    MPI_Offset myOffset = ( coords[0] * block.height() * tempHeader.width + coords[1] * block.width() ) * sizeof( T );
+    checkres( MPI_File_set_view( matFile, sizeof( SHeader ) + myOffset , MPI_TYPE, blockType, "native", MPI_INFO_NULL) );
+    MPI_File_read_all( matFile, block.raw(), block.height() * block.width(), MPI_TYPE, &status );
+    MPI_File_close( &matFile );
+
+    return block;
+}
+
+template< class T, MPI_Datatype MPI_TYPE >
+bool parallelWrite( const char* file, int rank, int xDim, int yDim, const int coords[2], MPI_Comm comm, const Matrix::matrix<T>& block )
+{
+    if ( !file || !file[0] )
+        return false;
+
+    Matrix::SHeader header = { block.height() * xDim, block.width() * yDim, block.dataType(), block.matrixType() };
+    if ( rank == ROOT_ID )
+    {
+        std::ofstream outFile( file, std::ios::binary );
+        if ( !outFile.good() )
+            return false;
+
+        outFile.write( ( char* )( &header ), sizeof( header ) );
+        outFile.close();
+    }
+    checkres( MPI_Barrier( comm ) );
+
+    MPI_Datatype blockType = MPI_Type_vector_wrapper( block.height(), block.width(), header.width, MPI_TYPE );
+    MPI_File matFile;
+    MPI_Status status;
+    checkres( MPI_File_open( comm, file, MPI_MODE_CREATE | MPI_MODE_WRONLY,  MPI_INFO_NULL, &matFile ) );
+
+    MPI_Offset myOffset = ( coords[0] * block.height() * header.width + coords[1] * block.width() ) * sizeof( T );
+    checkres( MPI_File_set_view( matFile, sizeof( SHeader ) + myOffset , MPI_TYPE, blockType, "native", MPI_INFO_NULL) );
+    MPI_File_write_all( matFile, block.raw(), block.height() * block.width(), MPI_TYPE, &status );
+    MPI_File_close( &matFile );
+
+    return true;
+}
+
 #endif
