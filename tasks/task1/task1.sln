@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio Express 2012 for Windows Desktop
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task1", "task1.vcxproj", "{0814004E-5045-4201-831D-227007169F22}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771} = {CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771}
@@ -66,6 +66,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task7_5_2", "..\task7_5_2\task7_5_2.vcxproj", "{98226E99-B364-49D6-9A9A-E55F2AD41BE8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task7_6", "..\task7_6\task7_6.vcxproj", "{5B760118-D1A9-4451-A7C9-F9AC308ECD06}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771} = {CE8386BC-97C6-4EE1-8BF3-40D1EB5F8771}
+		{35F9F4C7-848A-4765-BD98-90A19763AA8B} = {35F9F4C7-848A-4765-BD98-90A19763AA8B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
