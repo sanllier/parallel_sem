@@ -58,6 +58,8 @@ int main( int argc, char** argv )
 
     //----------------------------------------------------
     
+    const double start = MPI_Wtime();
+
     SHeader aHeader;
     SHeader bHeader;
     matrix< MATRIX_TYPE > aBlock;
@@ -69,8 +71,6 @@ int main( int argc, char** argv )
         throw "Invalid matrices dimensions( non equal )";
 
     //-----------------------------------------------------
-
-    const double start = MPI_Wtime();
 
     int leftRank = 0;
     int rightRank = 0;

@@ -78,6 +78,8 @@ int main( int argc, char** argv )
 
     //----------------------------------------------------
    
+    const double start = MPI_Wtime();
+
     matrix< MATRIX_TYPE > aBlock;
     matrix< MATRIX_TYPE > bBlock;
 
@@ -140,8 +142,6 @@ int main( int argc, char** argv )
 
     //-----------------------------------------------------
 
-    const double start = MPI_Wtime();
-
     matrix< MATRIX_TYPE >* resBlock = matrix_helper< MATRIX_TYPE >::mul( aBlock, bBlock );
     MPI_Datatype RESBLOCK = MPI_Type_vector_wrapper( resBlock->height(), resBlock->width(), resBlock->dataWidth(), MPI_TYPE );
 
@@ -159,9 +159,6 @@ int main( int argc, char** argv )
     {
         checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, cDepthComm ) );
     }
-
-    const double end = MPI_Wtime();
-    MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
 
     //-----------------------------------------------------
 
@@ -230,6 +227,9 @@ int main( int argc, char** argv )
         for ( int i = 0; i < xDim; ++i )
             MPI_Barrier( MPI_COMM_WORLD ); // CRAP
     }
+
+    const double end = MPI_Wtime();
+    MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
 
     delete resBlock;
     resBlock = 0;

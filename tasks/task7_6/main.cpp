@@ -111,6 +111,8 @@ int main( int argc, char** argv )
 
     //----------------------------------------------------
   
+    const double start = MPI_Wtime();
+
     SHeader aHeader;
     SHeader bHeader;
     matrix< MATRIX_TYPE > aBlock;
@@ -130,8 +132,6 @@ int main( int argc, char** argv )
 
     //-----------------------------------------------------
 
-    const double start = MPI_Wtime();
-
     matrix< MATRIX_TYPE >* resBlock = matrix_helper< MATRIX_TYPE >::mul( aBlock, bBlock );
     MPI_Datatype RESBLOCK = MPI_Type_vector_wrapper( resBlock->height(), resBlock->width(), resBlock->dataWidth(), MPI_TYPE );
 
@@ -150,10 +150,12 @@ int main( int argc, char** argv )
         checkres( MPI_Send( resBlock->raw(), 1, RESBLOCK, ROOT_ID, 0, cDepthComm ) );
     }
 
-    const double end = MPI_Wtime();
-    MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
+    //-----------------------------------------------------
 
     parallelWrite< MATRIX_TYPE, MPI_TYPE >( resFile, myCSideRank, xDim, zDim, cSideCoords, cSideComm, *resBlock );
+
+    const double end = MPI_Wtime();
+    MASTERPRINT( "TOTAL TIME: " << end - start << "\r\n" );
 
     delete resBlock;
     resBlock = 0;
