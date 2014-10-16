@@ -1,15 +1,14 @@
 all: task5
-OBJECTS = main.o parparser.o
-OBJECTSDEBUG = main_debug.o helpers_debug.o kernel_debug.o
+OBJECTS = parparser.o main.o
 
 task5: $(OBJECTS)
-	g++ -std=c++11 -L../../lib/parparser $^ -o $@
+	mpicxx -std=c++11 -L../../lib $^ -o $@
 
 main.o: main.cpp
-	g++ -std=c++11 -I../../lib/parparser -I../../lib/matrix -o $@
+	mpicxx -std=c++11 -I../../lib -o $@
 
-parparser.o: parparser.cpp
-	g++ -std=c++11 $^ -o $@
+../../lib/parparser/parparser.o: ../../lib/parparser/parparser.cpp
+	mpicxx -std=c++11 $^ -o $@
 	
 clean:
 	rm -rf *.o task5
