@@ -2,11 +2,11 @@
 #include <fstream>
 #include <ctime>
 
-#include "matrix\matrix.h"
-#include "matrix\matrix_helper.h"
-#include "matrix\matrix_serialization.h"
+#include "matrix/matrix.h"
+#include "matrix/matrix_helper.h"
+#include "matrix/matrix_serialization.h"
 
-#include "parparser\parparser.h"
+#include "parparser/parparser.h"
 
 //----------------------------------------------------------
 

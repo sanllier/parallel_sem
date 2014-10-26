@@ -1,31 +1,32 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "my_shared_ptr.h"
+
 #include <cstring>
-#include <memory>
-#include <exception>
+#include <stdexcept>
 #include <complex>
 
 namespace Matrix {
 //--------------------------------------------------------------
 
-enum EDataType : int
+enum EDataType
 {
-	UNDEFINED_DATA_TYPE,
-	INT,
-	LONG,
-	FLOAT,
-	DOUBLE,
+    UNDEFINED_DATA_TYPE,
+    INT,
+    LONG,
+    FLOAT,
+    DOUBLE,
     COMPLEX_INT,
     COMPLEX_LONG,
-	COMPLEX_FLOAT,
-	COMPLEX_DOUBLE
+    COMPLEX_FLOAT,  
+    COMPLEX_DOUBLE
 };
 
-enum EMatrixType : int
+enum EMatrixType
 {
-	UNDEFINED_MATRIX_TYPE,
-	DENSE_NORMAL
+    UNDEFINED_MATRIX_TYPE,
+    DENSE_NORMAL
 };
 
 //--------------------------------------------------------------
@@ -260,7 +261,7 @@ private:
 	EDataType   m_dataType;
 	EMatrixType m_matrixType;
 
-	std::shared_ptr<T> m_data;
+	shared_ptr<T> m_data;
 };
 
 template<> EDataType matrix<int>::getType() { return INT; }

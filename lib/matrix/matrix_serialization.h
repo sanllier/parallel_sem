@@ -28,7 +28,6 @@
 namespace Matrix {
 //--------------------------------------------------------------
 
-__declspec(align(1))
 struct SHeader
 {
     long height;
@@ -279,7 +278,6 @@ public:
 		if ( !buf )
 			return 0;
 
-		auto onExit = [ buf, this ]( std::ifstream& iFstr ){ delete[] buf; iFstr.close(); deserializeStop(); };
 		void* undefMatr;
 
 		iFstr.read( buf, BUF_SIZE );
@@ -287,7 +285,12 @@ public:
 		header = deserializeStart( BUF_SIZE, buf );
 
         undefMatr = newMatrixByType( header );
-        if ( !undefMatr ) onExit( iFstr );
+        if ( !undefMatr )
+        { 
+			delete[] buf; 
+			iFstr.close(); 
+			deserializeStop();
+        }
 
 		size_t size = 0;
 		do
@@ -300,13 +303,17 @@ public:
             {
                 delete undefMatr;
 				undefMatr = 0;
-				onExit( iFstr );
+				delete[] buf; 
+				iFstr.close(); 
+				deserializeStop();
 				return 0;	
             }			
 		} while( size );
 		deserializeStop();
 
-		onExit( iFstr );
+		delete[] buf; 
+		iFstr.close(); 
+	    deserializeStop();
 		return undefMatr;
 	}
 

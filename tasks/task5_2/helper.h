@@ -5,11 +5,11 @@
 #include <fstream>
 #include <vector>
 
-#include "matrix\matrix.h"
-#include "matrix\matrix_helper.h"
-#include "matrix\matrix_serialization.h"
+#include "matrix/matrix.h"
+#include "matrix/matrix_helper.h"
+#include "matrix/matrix_serialization.h"
 #include "mpi.h"
-#include "parparser\parparser.h"
+#include "parparser/parparser.h"
 
 //----------------------------------------------------------
 
@@ -125,7 +125,7 @@ template< class T >
 inline Matrix::matrix<T> getBlock( Matrix::matrix<T>& mat, int procNum, int block )
 {
     long blockWidth = mat.width() / procNum;
-    matrix<T> subMat( mat.height(), blockWidth );
+    Matrix::matrix<T> subMat( mat.height(), blockWidth );
     subMat.weakSubmatrix( mat, 0, block * blockWidth, mat.height(), blockWidth );
     return subMat;
 }
@@ -141,7 +141,7 @@ Matrix::matrix<T> deserializeLine( const char* fileName, int lineNum, int totalL
         return Matrix::matrix<T>();
     }
 
-    matrix_serialization serializer;
+    Matrix::matrix_serialization serializer;
     size_t size = fileSize( file );
     file.read( buffer, BUF_SIZE );
     Matrix::SHeader header = serializer.deserializeStart( BUF_SIZE, buffer );
@@ -151,7 +151,7 @@ Matrix::matrix<T> deserializeLine( const char* fileName, int lineNum, int totalL
     *fullHeader = header;
 
     header.height /= totalLines;
-    int myShift = sizeof( SHeader ) + header.height * lineNum * header.width * ELEMENT_SIZE_BY_TYPE[ header.dataType ];
+    int myShift = sizeof( Matrix::SHeader ) + header.height * lineNum * header.width * ELEMENT_SIZE_BY_TYPE[ header.dataType ];
     file.seekg( myShift );
     size = header.height * header.width * ELEMENT_SIZE_BY_TYPE[ header.dataType ];
 

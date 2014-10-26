@@ -48,7 +48,7 @@ bool parparser::parse( int argc, char** argv )
 
 KVPair parparser::get( const char* key )
 {
-    auto found = m_map.find( key );
+    std::map< std::string, std::string >::iterator found = m_map.find( key );
     if ( found == m_map.end() )
         return KVPair();
     else

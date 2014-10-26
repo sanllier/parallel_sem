@@ -50,8 +50,8 @@ int main( int argc, char** argv )
 
     //----------------------------------------------------
 
-    const int dims[3] = { xDim, yDim, zDim  };
-    const int periods[3] = { 0, 0, 0 };
+    int dims[3] = { xDim, yDim, zDim  };
+    int periods[3] = { 0, 0, 0 };
     MPI_Comm cubeComm;
     checkres( MPI_Cart_create( MPI_COMM_WORLD, 3, dims, periods, true, &cubeComm ) );
 

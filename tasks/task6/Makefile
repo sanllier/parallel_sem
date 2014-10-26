@@ -1,7 +1,7 @@
-all: task7_5
+all: task6
 OBJECTS = parparser.o main.o
 
-task7_5: $(OBJECTS)
+task6: $(OBJECTS)
 	mpicxx $^ -o $@
 
 main.o: main.cpp
@@ -11,4 +11,4 @@ parparser.o: ../../lib/parparser/parparser.cpp
 	mpicxx -c -O3 $^ -o $@
 	
 clean:
-	rm -rf *.o task7_5
+	rm -rf *.o task6

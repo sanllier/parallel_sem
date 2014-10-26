@@ -124,19 +124,6 @@ public:
         return temp;
     }
 
-    static matrix<T>* mulc( const matrix<T>& matA, T frac )
-    {
-        if ( matA.width() != matB.width() || matA.height() != matB.height() )
-            return 0;
-
-        matrix<T>* temp = new matrix<T>( matA.height(), matB.width() );
-        for ( long i = 0; i < matA.height(); ++i )
-            for ( long q = 0; q < matA.width(); ++q )
-                temp->at( i, q ) = matA.at( i, q ) * frac;
-
-        return temp;
-    }
-
     static bool mulsum( matrix<T>& res, const matrix<T>& matA, const matrix<T>& matB )
     {
         if ( matA.width() != matB.height() || matA.height() != res.height() || matB.width() != res.width() )

@@ -46,8 +46,8 @@ int main( int argc, char** argv )
 
     //----------------------------------------------------
 
-    const int dims[2] = { sqrtProcNum, sqrtProcNum  };
-    const int periods[2] = { 1, 1 };
+    int dims[2] = { sqrtProcNum, sqrtProcNum  };
+    int periods[2] = { 1, 1 };
     MPI_Comm gridComm;
     MPI_Cart_create( MPI_COMM_WORLD, 2, dims, periods, true, &gridComm );
 
